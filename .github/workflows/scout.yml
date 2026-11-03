@@ -1,0 +1,110 @@
+name: Scout Worker
+
+concurrency:
+  group: scout-worker
+  cancel-in-progress: false
+
+# Reliable scheduling:
+# - Primary: cron-job.org hits workflow_dispatch every 12 min via GH API (fine-grained PAT limited to this repo)
+# - Backup: GitHub cron at :17 and :47 (not :00) — best-effort
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Optional: run only one source id"
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry run (no DB write, no alerts)"
+        required: false
+        default: "false"
+  schedule:
+    - cron: "17 * * * *"
+    - cron: "47 * * * *"
+    - cron: "0 8 * * *"  # daily 08:00 UTC for deadline reminders (also runs scout)
+  push:
+    branches: [main]
+    paths: ["worker/**","config/**",".github/workflows/scout.yml"]
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Validate secrets
+        run: |
+          test -n "${{ secrets.GEMINI_API_KEY }}" || echo "::warning::GEMINI_API_KEY not set — AI extraction skipped"
+          test -n "${{ secrets.SUPABASE_URL }}" || echo "::warning::SUPABASE_URL not set"
+          test -n "${{ secrets.HEALTHCHECKS_PING_URL }}" || echo "::notice::HEALTHCHECKS_PING_URL not set — dead-man's switch disabled"
+
+      - name: Run Scout
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          GEMINI_DAILY_BUDGET: ${{ secrets.GEMINI_DAILY_BUDGET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          ALERT_TO_EMAIL: ${{ secrets.ALERT_TO_EMAIL }}
+          HEALTHCHECKS_PING_URL: ${{ secrets.HEALTHCHECKS_PING_URL }}
+          GH_PAT_EXPIRY: ${{ secrets.GH_PAT_EXPIRY }}
+          HEARTBEAT_PATH: heartbeat.json
+          TIMEZONE: Africa/Lagos
+        run: |
+          python -m worker.main --once ${{ inputs.source && format('--source {0}', inputs.source) || '' }} ${{ inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      - name: Run deadline reminders (60/30/7)
+        if: always()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          ALERT_TO_EMAIL: ${{ secrets.ALERT_TO_EMAIL }}
+          TIMEZONE: Africa/Lagos
+        run: |
+          python -m worker.main --reminders-only || echo "::warning::reminders failed"
+
+      - name: Commit heartbeat once a day (not every run)
+        run: |
+          if [ -f heartbeat.json ]; then
+            # Only commit if it's a new calendar day vs last commit
+            last_date=$(git log -1 --format=%cd --date=short -- heartbeat.json 2>/dev/null || echo "1970-01-01")
+            today=$(date -u +%Y-%m-%d)
+            if [ "$last_date" != "$today" ]; then
+              git config user.name "scout-bot"
+              git config user.email "scout-bot@users.noreply.github.com"
+              git add heartbeat.json
+              git diff --staged --quiet || git commit -m "chore: heartbeat $today"
+              git push || echo "::warning::heartbeat push failed"
+            else
+              echo "Heartbeat already committed today ($today) — skipping push to save commits"
+            fi
+          fi
+
+      - name: Upload heartbeat artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: heartbeat
+          path: heartbeat.json
+          if-no-files-found: warn
