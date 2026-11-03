@@ -1,0 +1,33 @@
+# Scoring weights — sum = 1.0
+weights:
+  field_fit: 0.30
+  country_preference: 0.15
+  funding_fit: 0.20
+  readiness_fit: 0.15
+  level_fit: 0.10
+  deadline_urgency: 0.10
+
+thresholds:
+  strong_match: 70
+  possible_match: 45
+  other_fields_threshold: 60
+
+hard_filters:
+  reject_past_deadline: true   # only for dated deadlines; rolling/unknown never rejected
+  reject_suspicious: true
+  funding:
+    enforce: true
+
+gap_penalties:
+  missing_ielts: 10
+  missing_transcript: 8
+  missing_referees: 5
+  missing_sop: 3
+
+bonus:
+  no_application_fee: 5
+  stipend_included: 5
+  visa_covered: 3
+
+# Nigeria eligibility: only "excluded" is discarded; "eligible" and "unclear" are kept
+# Deadline: "dated" with past date → rejected; "rolling" and "unknown" are kept with marker

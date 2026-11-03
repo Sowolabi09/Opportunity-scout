@@ -1,0 +1,12 @@
+# Gemini free-tier limits — verified Oct 2026 via https://ai.google.dev/gemini-api/docs/rate-limits + AI Studio
+# Check YOUR live limits: https://aistudio.google.com/rate-limit
+# 2.0 models shut down June 1 2026 — do NOT use gemini-2.0-flash* anymore.
+gemini:
+  # Current valid free-tier model (auto-updated alias recommended)
+  model: "gemini-2.5-flash-lite"  # alternatives: gemini-2.5-flash, gemini-3.1-flash-lite
+  # Free-tier RPM/RPD as of Oct 2026 (check AI Studio — these are not guaranteed)
+  # 2.5 Flash-Lite: 15 RPM, 250k TPM, 1000-1500 RPD | 2.5 Flash: 10 RPM, 250k TPM, 250-500 RPD | 2.0 Flash-Lite was 30/1M/1500 but EOL
+  rpm: 28              # stay just under 30 for Flash-Lite to avoid 429
+  rpd: 1400            # stay under 1500
+  tpm: 250000
+  # Code reads these at startup; override via env GEMINI_MODEL / GEMINI_RPM_LIMIT / GEMINI_DAILY_BUDGET
