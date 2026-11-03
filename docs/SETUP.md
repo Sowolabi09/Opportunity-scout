@@ -49,7 +49,7 @@ All ask no card.
 | Secret name | Where to find it |
 |---|---|
 | `GEMINI_API_KEY` | from Step 1 |
-| `GEMINI_MODEL` | `gemini-2.5-flash-lite` (current free tier; 2.0 models shut down June 2026) — see `config/ai_limits.yaml` |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` (free tier, Google's recommendation for new projects as of Nov 2026). The 2.0 family was shut down 2026-06-01 and the 2.5 family is now restricted to pre-existing projects. See `config/ai_limits.yaml`. |
 | `SUPABASE_URL` | from Step 2 |
 | `SUPABASE_SERVICE_ROLE_KEY` | from Step 2 (only key needed) |
 | `TELEGRAM_BOT_TOKEN` | see Step 4 |

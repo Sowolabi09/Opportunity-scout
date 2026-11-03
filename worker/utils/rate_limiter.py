@@ -15,7 +15,7 @@ def load_ai_limits():
         pass
     # Fallback defaults — verified Oct 2026: Gemini 2.5 Flash-Lite 30 RPM/1500 RPD, Flash 10-15 RPM/500 RPD
     return {
-        "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
+        "model": os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
         "rpm": int(os.getenv("GEMINI_RPM_LIMIT", "28")),
         "rpd": int(os.getenv("GEMINI_DAILY_BUDGET", "1400")),
         "tpm": 250000,

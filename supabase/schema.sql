@@ -170,7 +170,7 @@ create table if not exists heartbeat (
   last_success timestamptz,
   last_heartbeat_commit date,
   worker_version text,
-  check constraint (id = 1)
+  check (id = 1)
 );
 insert into heartbeat (id) values (1) on conflict (id) do nothing;
 

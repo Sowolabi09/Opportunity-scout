@@ -15,11 +15,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from worker.sources import load_sources
-from worker.extraction.ai_provider import get_provider
+from worker.extraction.ai_provider import get_provider, FatalAIError
 from worker.verification.trust import verify
 from worker.scoring.matcher import load_weights, hard_filter, weighted_score, finalize_score
 from worker.utils.dedup import dedup_hash, content_hash, canonical_url, extract_intake_year
 from worker.utils.rate_limiter import RateLimiter
+from worker.utils.preflight import check_env, print_report
 from worker.utils.text import PHYSIOLOGY_KEYWORDS
 from worker.db.supabase_client import get_client, get_profile, log_run, enqueue_ai, dequeue_ai, mark_queue_done
 from worker.alerts.emailer import send_strong_alert, send_system_alert
@@ -500,6 +501,28 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--reminders-only", action="store_true", help="Only run deadline reminders")
     args=ap.parse_args()
+
+    # Fail fast on malformed secrets (seconds, not a 15-minute timeout)
+    report = check_env()
+    print_report(report)
+    if not report["ok"]:
+        print("[worker] aborting: fix the secrets listed above and re-run")
+        sys.exit(1)
+
+    # Prove the Gemini key + model work before scraping 30+ sources (10s vs 15min)
+    if os.getenv("GEMINI_API_KEY") and not args.reminders_only:
+        try:
+            _p = get_provider()
+            _model = _p.resolve_model()
+            _p._call("Reply with the single word OK.")
+            print(f"[preflight] Gemini OK (model={_model})")
+        except FatalAIError as e:
+            print(f"[preflight][ERROR] Gemini check failed: {e}")
+            print("[worker] aborting: fix GEMINI_API_KEY / GEMINI_MODEL and re-run")
+            sys.exit(1)
+        except Exception as e:
+            print(f"[preflight][warn] Gemini check inconclusive ({e}); continuing")
+
     if args.reminders_only:
         client=get_client()
         profile=get_profile(client)
@@ -512,7 +535,11 @@ def main():
             print("[worker] sleeping 600s...")
             time.sleep(600)
     else:
-        run_once(source_filter=args.source, dry_run=args.dry_run)
+        try:
+            run_once(source_filter=args.source, dry_run=args.dry_run)
+        except FatalAIError as e:
+            print(f"[worker][ERROR] AI aborted the run: {e}")
+            sys.exit(1)
 
 if __name__=="__main__":
     main()

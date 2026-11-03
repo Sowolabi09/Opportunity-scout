@@ -9,7 +9,7 @@
 | 1 | Queue + counters in Supabase (runners wiped) | Replaced `/tmp/ai_queue.jsonl` + in-memory RPM/RPD with `ai_queue` + `ai_usage` tables. `enqueue_ai/dequeue_ai/get_ai_usage/increment_ai_usage` now persist. Test proves item survives new run. | `supabase/schema.sql`, `worker/db/supabase_client.py`, `worker/utils/rate_limiter.py`, `worker/main.py`, `tests/test_persistence.py` |
 | 2 | RLS no anon policies | Removed `allow_all_anon` policies. Enabled RLS with **no** anon policies — `service_role` bypasses RLS, so worker & dashboard (server-side Streamlit) use `SUPABASE_SERVICE_ROLE_KEY` only. Documented server-side safety behind `DASHBOARD_PASSWORD`. | `supabase/schema.sql`, `worker/db/supabase_client.py`, `app/streamlit_app.py`, `.env.example` |
 | 3 | healthchecks.io dead-man's switch + GH token expiry | Added `HEALTHCHECKS_PING_URL` ping at end of every run (success → `GET url`, fail → `GET url/fail`). Healthchecks.io check should be Period 12m, Grace 45m — alerts via its own email/Slack/Telegram when pings stop 45m. Added `GH_PAT_EXPIRY` check: warns via email+Telegram when PAT ≤7 days. | `worker/main.py`, `.env.example`, `config/ai_limits.yaml`, `.github/workflows/scout.yml` (passes HEALTHCHECKS_PING_URL) |
-| 4 | Real Gemini limits, current model | Verified Oct 2026: `gemini-2.0-flash*` EOL June 1 2026. Default now `gemini-2.5-flash-lite` (30 RPM, 250K TPM, 1000-1500 RPD). Added `config/ai_limits.yaml` as source of truth (check https://aistudio.google.com/rate-limit). Code reads from config, env overrides. | `worker/extraction/ai_provider.py`, `worker/utils/rate_limiter.py`, `config/ai_limits.yaml`, `.env.example`, `supabase/schema.sql` comments |
+| 4 | Real Gemini limits, current model | Verified Nov 2026: 2.0 family shut down 2026-06-01; 2.5 family restricted to pre-existing projects (new projects 404). Default is now `gemini-3.5-flash-lite`, with runtime auto-detection of the models a key can actually see. AI Studio now issues `AQ.Ab...` auth keys. | `worker/extraction/ai_provider.py`, `worker/utils/rate_limiter.py`, `config/ai_limits.yaml`, `.env.example`, `supabase/schema.sql` comments |
 | 5 | Verification: SUSPICIOUS only for agent payments | New `SUSPICIOUS_PAYMENT_PATTERNS` only for Western Union/MoneyGram/crypto/gift/WhatsApp payment, `fee to secure/release award`, payment to individual/agent. Official `application fee` on trusted domain → cost breakdown, not SUSPICIOUS. Trusted domain now matches **exact registered domain** via `tldextract`; brand impersonation (chevening, daad, etc. in non-allowlisted domain) flagged as UNVERIFIED. | `worker/verification/trust.py` |
 | 6 | Nigeria 3-state, keep rolling/unknown deadlines | `nigeria_eligibility: eligible/excluded/unclear` (only `excluded` discarded, `unclear` kept). `deadline_status: dated/rolling/unknown` — `rolling/unknown` never rejected for deadline, shown as rolling. Past dated deadline still rejected. | `supabase/schema.sql`, `worker/scoring/matcher.py`, `worker/extraction/ai_provider.py`, `app/streamlit_app.py` |
 | 7 | Dedup: title+funder+intake_year+canonical URL | Hash no longer includes deadline. Uses `canonical_url()` (strips utm_*, fbclid, www, fragment, lowercases) + `intake_year` from deadline/title. Deadline change → same hash → existing record updated (no new alert). | `worker/utils/dedup.py`, `worker/main.py` |
@@ -126,14 +126,14 @@ Plain-code first: `is_borderline()` ±10 around 45 and 70 → AI only then; merg
 | Where | Key | Default | Notes |
 |---|---|---|---|
 | `.env` / Secrets | `GEMINI_API_KEY` | — | No card |
-| | `GEMINI_MODEL` | `gemini-2.5-flash-lite` | Was `2.0-flash-lite` EOL 2026-06-01 |
+| | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Was `2.0-flash-lite` (EOL 2026-06-01), then `2.5-flash-lite` (restricted for new projects) |
 | | `GEMINI_DAILY_BUDGET` | 1400 | From `config/ai_limits.yaml` (1500 max) |
 | | `GEMINI_RPM_LIMIT` | 28 | From config (30 max for Lite) |
 | | `SUPABASE_SERVICE_ROLE_KEY` | — | **Only** key needed now (no anon) |
 | | `HEALTHCHECKS_PING_URL` | — | `https://hc-ping.com/<uuid>` — Period 12m Grace 45m |
 | | `GH_PAT_EXPIRY` | — | `YYYY-MM-DD` for expiry alert |
 | | `DASHBOARD_PASSWORD` | — | Gates service_role dashboard |
-| `config/ai_limits.yaml` | `gemini.model/rpm/rpd/tpm` | 2.5-flash-lite/28/1400/250K | Live limits: check https://aistudio.google.com/rate-limit |
+| `config/ai_limits.yaml` | `gemini.model/rpm/rpd/tpm` | 3.5-flash-lite/12/900/250K | Live limits: check https://aistudio.google.com/rate-limit |
 | `config/scoring_weights.yaml` | weights/thresholds | 70/45/60 | |
 | `.github/workflows/scout.yml` | concurrency | scout-worker | |
 
