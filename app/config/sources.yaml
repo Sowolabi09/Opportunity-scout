@@ -1,0 +1,299 @@
+# Opportunity Scout — Source Registry
+# Adding a source = one YAML entry + optionally one parser file in worker/sources/
+# Intervals: fast (RSS/aggregators) 10-15m, slow (university pages) 2-6h
+# Respect robots.txt & ToS — if forbidden, mark enabled: false and document why.
+
+defaults:
+  user_agent: "OpportunityScout/1.0 (+https://github.com/YOU/opportunity-scout; contact: via GitHub)"
+  request_timeout: 20
+  rate_limit_rps: 0.5   # 1 request per 2s per domain
+  max_retries: 2
+
+sources:
+  # ── Major funders & programs ──
+  - id: chevening
+    name: Chevening Scholarships
+    type: scrape
+    url: https://www.chevening.org/scholarships/
+    rss: null
+    schedule: slow
+    interval_minutes: 360
+    fields: [any]
+    levels: [masters]
+    enabled: true
+    notes: "UK government — verify on chevening.org"
+
+  - id: commonwealth
+    name: Commonwealth Scholarships
+    type: scrape
+    url: https://cscuk.fcdo.gov.uk/scholarships/
+    rss: null
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: daad
+    name: DAAD Scholarships
+    type: rss
+    url: https://www.daad.de/en/
+    rss: https://www.daad.de/rss/en/rss-feeds/
+    schedule: fast
+    interval_minutes: 60
+    enabled: true
+
+  - id: erasmus_mundus
+    name: Erasmus Mundus Catalogue
+    type: scrape
+    url: https://www.eacea.ec.europa.eu/scholarships/emjmd-catalogue_en
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: fulbright
+    name: Fulbright Foreign Student Program
+    type: scrape
+    url: https://foreign.fulbrightonline.org/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: gates_cambridge
+    name: Gates Cambridge Scholarships
+    type: scrape
+    url: https://www.gatescambridge.org/apply/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: rhodes
+    name: Rhodes Trust
+    type: scrape
+    url: https://www.rhodeshouse.ox.ac.uk/scholarships/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: mastercard_foundation
+    name: Mastercard Foundation Scholars Program
+    type: scrape
+    url: https://mastercardfdn.org/all/scholars/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: rotary_global_grants
+    name: Rotary Global Grants
+    type: scrape
+    url: https://www.rotary.org/en/our-programs/scholarships
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: aga_khan
+    name: Aga Khan Foundation ISP
+    type: scrape
+    url: https://www.akdn.org/our-agencies/aga-khan-foundation/international-scholarship-programme
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: wellcome
+    name: Wellcome Trust Funding
+    type: rss
+    url: https://wellcome.org/grant-funding
+    rss: https://wellcome.org/rss.xml
+    schedule: fast
+    interval_minutes: 60
+    enabled: true
+
+  - id: tetfund
+    name: TETFund Nigeria
+    type: scrape
+    url: https://tetfund.gov.ng/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: swedish_institute
+    name: Swedish Institute Scholarships
+    type: scrape
+    url: https://si.se/en/apply/scholarships/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: swiss_gov
+    name: Swiss Government Excellence Scholarships
+    type: scrape
+    url: https://www.sbfi.admin.ch/sbfi/en/home/education/scholarships-and-grants/swiss-government-excellence-scholarships.html
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: australia_awards
+    name: Australia Awards
+    type: scrape
+    url: https://www.dfat.gov.au/people-to-people/australia-awards
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: mext_japan
+    name: MEXT Scholarships (Japan)
+    type: scrape
+    url: https://www.mext.go.jp/en/policy/education/highered/title02/detail02/s__bg2_000073020_1.htm
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: csc_china
+    name: Chinese Government Scholarship (CSC)
+    type: scrape
+    url: https://www.campuschina.org/scholarships/index.html
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: gks_korea
+    name: Global Korea Scholarship (GKS)
+    type: scrape
+    url: https://www.studyinkorea.go.kr/en/sub/gks/allnew_invite.do
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  # ── Aggregators ──
+  - id: findaphd
+    name: FindAPhD
+    type: rss
+    url: https://www.findaphd.com/
+    rss: https://www.findaphd.com/rss/phd-rss.xml
+    schedule: fast
+    interval_minutes: 15
+    enabled: true
+
+  - id: findamasters
+    name: FindAMasters
+    type: rss
+    url: https://www.findamasters.com/
+    rss: https://www.findamasters.com/rss/masters-rss.xml
+    schedule: fast
+    interval_minutes: 15
+    enabled: true
+
+  - id: scholarshipportal
+    name: ScholarshipPortal
+    type: scrape
+    url: https://www.scholarshipportal.com/
+    schedule: fast
+    interval_minutes: 60
+    enabled: true
+
+  - id: scholars4dev
+    name: Scholars4Dev
+    type: rss
+    url: https://www.scholars4dev.com/
+    rss: https://www.scholars4dev.com/feed/
+    schedule: fast
+    interval_minutes: 15
+    enabled: true
+
+  - id: opportunity_desk
+    name: Opportunity Desk
+    type: rss
+    url: https://opportunitydesk.org/
+    rss: https://opportunitydesk.org/feed/
+    schedule: fast
+    interval_minutes: 15
+    enabled: true
+
+  - id: afterschoolafrica
+    name: After School Africa
+    type: rss
+    url: https://www.afterschoolafrica.com/
+    rss: https://www.afterschoolafrica.com/feed/
+    schedule: fast
+    interval_minutes: 15
+    enabled: true
+
+  # ── Subject sources ──
+  - id: feps
+    name: Federation of European Physiological Societies
+    type: scrape
+    url: https://www.feps.org/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: aps_usa
+    name: American Physiological Society
+    type: scrape
+    url: https://www.physiology.org/professional-development/fellowships
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: physoc_uk
+    name: The Physiological Society (UK)
+    type: scrape
+    url: https://www.physoc.org/grants-and-prizes/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: iups
+    name: International Union of Physiological Sciences
+    type: scrape
+    url: https://www.iups.org/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  # ── University pages (examples — expand) ──
+  - id: oxford_biomed
+    name: Oxford — Biomedical Scholarships
+    type: scrape
+    url: https://www.ox.ac.uk/admissions/graduate/fees-and-funding
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: cambridge_funding
+    name: Cambridge — Funding Search
+    type: scrape
+    url: https://www.postgraduate.study.cam.ac.uk/funding
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: ucl_scholarships
+    name: UCL Scholarships
+    type: scrape
+    url: https://www.ucl.ac.uk/scholarships/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: lmu_munich
+    name: LMU Munich — Scholarships
+    type: scrape
+    url: https://www.lmu.de/en/study/scholarships/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: karolinska
+    name: Karolinska Institutet
+    type: scrape
+    url: https://education.ki.se/scholarships
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
+
+  - id: utoronto_sgs
+    name: University of Toronto — SGS Awards
+    type: scrape
+    url: https://www.sgs.utoronto.ca/awards/
+    schedule: slow
+    interval_minutes: 360
+    enabled: true
